@@ -11,10 +11,14 @@ using glm::vec4;
 
 namespace DoganGL {
     struct Vertex {
+        std::vector<float> attribs;
+    };
+    struct ProcessedVertex {
+        std::vector<float> attribs;
         vec4 pos;
     };
     struct Triangle {
-        Vertex A,B,C;
+        ProcessedVertex A,B,C;
     };
     // TODO -- implement uniforms/textures
     struct Fragment {
@@ -29,14 +33,27 @@ namespace DoganGL {
             return stbi_write_png(path.c_str(), width, height, 3, pixels.data(), width * 3);
         }
     };
+    struct VAO {
+        int index;
+        VAO() {
+            index = 0;
+        }
+        int addAttrib(int size) {
+            int tmp = index;
+            index += size;
+            return tmp;
+        }
+    };
     using VertexShader = std::function<vec4(const Vertex&)>;
     using FragmentShader = std::function<vec4(const Fragment&)>;
     struct Context {
         std::vector<Vertex> vertices;
-        std::vector<Vertex> postVSVertices;
+        std::vector<ProcessedVertex> postVSVertices;
         std::vector<Triangle> postProcessedTris;
         std::vector<Fragment> fragments;
         Image img;
+        VAO vao;
+        bool VAObinded = false;
         
         // Add checks for if shaders are loaded!
         VertexShader vertexShader;
@@ -48,6 +65,10 @@ namespace DoganGL {
             float farVal  = 1.f; // mapping of far  clipping plane to window coords
         } viewport;
     };
+    void bindVAO(Context * context, VAO &vao) {
+        context->vao = vao;
+        context->VAObinded = true;
+    }
     void loadVertices(Context * context, std::vector<Vertex> vertices) {
         context->vertices = vertices;
     }
@@ -58,12 +79,14 @@ namespace DoganGL {
         context->fragmentShader = fs;
     }
     bool applyVertexShader(Context * context) {
+        if (!(context->VAObinded))
+            return false;
         if (!(context->vertices.size()))
             return false;
         context->postVSVertices.clear();
         context->postVSVertices.reserve(context->vertices.size());
         for (Vertex vertex : context->vertices) {
-            Vertex tmp;
+            ProcessedVertex tmp;
             tmp.pos = context->vertexShader(vertex);
             context->postVSVertices.push_back(tmp);
         }
@@ -74,9 +97,9 @@ namespace DoganGL {
         // axis = 0 -> x-axis
         // axis = 1 -> y-axis
         // axis = 2 -> z-axis
-        std::vector<Vertex> inside, outside;
+        std::vector<ProcessedVertex> inside, outside;
 
-        for (const Vertex& vertex : {tri.A, tri.B, tri.C}) {
+        for (const ProcessedVertex& vertex : {tri.A, tri.B, tri.C}) {
             if (sign > 0 && vertex.pos[axis] <= vertex.pos[3]) {
                 inside.push_back(vertex);
             } else if (sign < 0 && vertex.pos[axis] >= -vertex.pos[3]) {
@@ -92,11 +115,17 @@ namespace DoganGL {
                 break;
             case 2: {
                 // Two new vertices needed
-                Vertex v4, v5;
-                v4.pos = inside[0].pos + ((sign * inside[0].pos[3] - inside[0].pos[axis])/(outside[0].pos[axis] - inside[0].pos[axis]))
-                *(outside[0].pos - inside[0].pos);
-                v5.pos = inside[1].pos + ((sign * inside[0].pos[3] - inside[1].pos[axis])/(outside[0].pos[axis] - inside[1].pos[axis]))
-                *(outside[0].pos - inside[1].pos);
+                ProcessedVertex v4, v5;
+                auto v4alpha = ((sign * inside[0].pos[3] - inside[0].pos[axis])/(outside[0].pos[axis] - inside[0].pos[axis]));
+                auto v5alpha = ((sign * inside[0].pos[3] - inside[1].pos[axis])/(outside[0].pos[axis] - inside[1].pos[axis]));
+                v4.pos = inside[0].pos + v4alpha * (outside[0].pos - inside[0].pos);
+                v5.pos = inside[1].pos + v4alpha *(outside[0].pos - inside[1].pos);
+                v4.attribs.resize(inside[0].attribs.size());
+                v5.attribs.resize(inside[0].attribs.size());
+                for (int i = 0; i < inside[0].attribs.size(); i++) {
+                    v4.attribs[i] = inside[0].attribs[i] + v4alpha * (outside[0].attribs[i] - inside[0].attribs[i]);
+                    v5.attribs[i] = inside[1].attribs[i] + v5alpha * (outside[0].attribs[i] - inside[1].attribs[i]);
+                }
                 Triangle t1, t2;
                 t1.A = inside[0]; t1.B = inside[1]; t1.C = v4;
                 t2.A = inside[1]; t2.B = v4; t2.C = v5;
@@ -106,11 +135,17 @@ namespace DoganGL {
             }
             case 1: {
                 // Two new vertices needed
-                Vertex v4, v5;
-                v4.pos = inside[0].pos + ((sign * inside[0].pos[3] - inside[0].pos[axis])/(outside[0].pos[axis] - inside[0].pos[axis]))
-                *(outside[0].pos - inside[0].pos);
-                v5.pos = inside[0].pos + ((sign * inside[0].pos[3] - inside[0].pos[axis])/(outside[1].pos[axis] - inside[0].pos[axis]))
-                *(outside[1].pos - inside[0].pos);
+                ProcessedVertex v4, v5;
+                auto v4alpha = ((sign * inside[0].pos[3] - inside[0].pos[axis])/(outside[0].pos[axis] - inside[0].pos[axis]));
+                auto v5alpha = ((sign * inside[0].pos[3] - inside[0].pos[axis])/(outside[1].pos[axis] - inside[0].pos[axis]));
+                v4.pos = inside[0].pos + v4alpha * (outside[0].pos - inside[0].pos);
+                v5.pos = inside[0].pos + v5alpha * (outside[1].pos - inside[0].pos);
+                v4.attribs.resize(inside[0].attribs.size());
+                v5.attribs.resize(inside[0].attribs.size());
+                for (int i = 0; i < inside[0].attribs.size(); i++) {
+                    v4.attribs[i] = inside[0].attribs[i] + v4alpha * (outside[0].attribs[i] - inside[0].attribs[i]);
+                    v5.attribs[i] = inside[0].attribs[i] + v5alpha * (outside[1].attribs[i] - inside[0].attribs[i]);
+                }
                 Triangle t1;
                 t1.A = inside[0]; t1.B = v4; t1.C = v5;
                 tris.push_back(t1);
@@ -122,7 +157,7 @@ namespace DoganGL {
         return;
         
     }
-    void viewportTransform(Context * context, Vertex &vert) {
+    void viewportTransform(Context * context, ProcessedVertex &vert) {
         const auto &viewport = context->viewport;
         vert.pos.x = (viewport.width/2.0)  * (vert.pos.x + 1) + viewport.x;
         vert.pos.y = (viewport.height/2.0) * (vert.pos.y + 1) + viewport.y;
@@ -205,8 +240,8 @@ namespace DoganGL {
             auto xmax = floorf(std::max({tri.A.pos.x, tri.B.pos.x, tri.C.pos.x}));
             auto ymin = floorf(std::min({tri.A.pos.y, tri.B.pos.y, tri.C.pos.y}));
             auto ymax = floorf(std::max({tri.A.pos.y, tri.B.pos.y, tri.C.pos.y}));
-            for (int x = xmin; x <= xmax; x++) {
-                for (int y = ymin; y <= ymax; y++) {
+            for (int x = __max(xmin, 0); x <= xmax && x < width; x++) {
+                for (int y = __max(ymin, 0); y <= ymax && y < height; y++) {
                     float e1 = edgeTest(tri.A.pos, tri.B.pos, vec2(x,y));
                     float e2 = edgeTest(tri.B.pos, tri.C.pos, vec2(x,y));
                     float e3 = edgeTest(tri.C.pos, tri.A.pos, vec2(x,y));

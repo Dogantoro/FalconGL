@@ -2,7 +2,7 @@
 #include <iostream>
 
 vec4 vs(DoganGL::Vertex vert) {
-    return vert.pos;
+    return vec4(vert.attribs[0], vert.attribs[1], vert.attribs[2], 1);
 }
 
 vec4 fs(DoganGL::Fragment frag) {
@@ -21,14 +21,21 @@ void displayTris(std::vector<DoganGL::Triangle> &tris) {
 
 int main() {
     DoganGL::Vertex triangleArr[3] = {
-        {{-0.5f, -0.5f, 0.0f, 1.0f}}, // Bottom-left
-        {{ 0.5f, -0.5f, 0.0f, 1.0f}}, // Bottom-right
-        {{ 0.0f,  0.5f, 0.0f, 1.0f}}  // Top-center
+        {{-0.5f, -0.5f, 0.0f}}, // Bottom-left
+        {{ 0.5f, -0.5f, 0.0f}}, // Bottom-right
+        {{ 0.0f,  0.5f, 0.0f}}  // Top-center
     };
+    // 1 Clip
     // DoganGL::Vertex triangleArr[3] = {
     //     {{2.0f, 0.0f, 0.0f, 1.0f}}, // Outside (x > w)
     //     {{0.0f, 1.0f, 0.0f, 1.0f}}, // Inside
     //     {{0.0f, -1.0f, 0.0f, 1.0f}} // Inside
+    // };
+    // 2 Clip
+    // DoganGL::Vertex triangleArr[3] = {
+    //     {{-0.4f, -0.4f, 0.0f, 1.0f}}, // Outside (x > w)
+    //     {{-0.4f,  1.4f, 0.0f, 1.0f}}, // Inside
+    //     {{ 1.4f, -0.4f, 0.0f, 1.0f}} // Inside
     // };
     std::vector<DoganGL::Vertex> triangle(&triangleArr[0], &triangleArr[3]);
     float viewportWidth = 800.0f;   // Screen width
@@ -43,6 +50,10 @@ int main() {
     context->viewport.farVal = farVal;
     context->viewport.x = 0;
     context->viewport.y = 0;
+
+    DoganGL::VAO vao;
+    int pos_index = vao.addAttrib(3);
+    DoganGL::bindVAO(context, vao);
 
     DoganGL::loadVertexShader(context, vs);
     DoganGL::loadVertices(context, triangle);
