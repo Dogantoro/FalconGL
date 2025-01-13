@@ -5,6 +5,9 @@
 #include "libs/stb-write.hpp"
 #include <string>
 
+#include <chrono>
+#include <iostream>
+
 using glm::vec2;
 using glm::vec3;
 using glm::vec4;
@@ -25,6 +28,13 @@ namespace DoganGL {
         bool drawn;
         float z;
         std::vector<float> attribs;
+        Fragment() {
+            drawn = false;
+        }
+        Fragment(int numAttribs) {
+            drawn = false;
+            attribs.resize(numAttribs);
+        }
     };
     struct Image {
         int width, height;
@@ -206,7 +216,7 @@ namespace DoganGL {
 
         context->postProcessedTris = tris;
     }
-    vec3 barycenterize(const Triangle tri, const vec2 cartesian) {
+    inline vec3 barycenterize(const Triangle tri, const vec2 cartesian) {
         auto &x  = cartesian.x;
         auto &y  = cartesian.y;
         auto &x1 = tri.A.pos.x;
@@ -215,8 +225,9 @@ namespace DoganGL {
         auto &y2 = tri.B.pos.y;
         auto &x3 = tri.C.pos.x;
         auto &y3 = tri.C.pos.y;
-        auto L1 = ((y2-y3)*(x-x3) + (x3-x2)*(y-y3)) / ((y2-y3)*(x1-x3) + (x3-x2)*(y1-y3));
-        auto L2 = ((y3-y1)*(x-x3) + (x1-x3)*(y-y3)) / ((y2-y3)*(x1-x3) + (x3-x2)*(y1-y3));
+        auto denom = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
+        auto L1 = ((y2-y3)*(x-x3) + (x3-x2)*(y-y3)) / denom;
+        auto L2 = ((y3-y1)*(x-x3) + (x1-x3)*(y-y3)) / denom;
         auto L3 = 1 - L1 - L2;
         return vec3(L1, L2, L3);
     }
@@ -228,11 +239,10 @@ namespace DoganGL {
         float height = context->viewport.height;
         context->fragments.clear();
         context->fragments.reserve(width * height);
+        float numAttribs = context-> vertices[0].attribs.size();
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
-                Fragment frag;
-                frag.drawn = false;
-                context->fragments.push_back(frag);
+                context->fragments.emplace_back(numAttribs);
             }
         }
         // TODO -- do not iterate over all fragments for every tri, this is so inefficient
@@ -243,6 +253,7 @@ namespace DoganGL {
             auto ymax = floorf(std::max({tri.A.pos.y, tri.B.pos.y, tri.C.pos.y}));
             for (int x = __max(xmin, 0); x <= xmax && x < width; x++) {
                 for (int y = __max(ymin, 0); y <= ymax && y < height; y++) {
+                    //auto start = std::chrono::high_resolution_clock::now();
                     float e1 = edgeTest(tri.A.pos, tri.B.pos, vec2(x,y));
                     float e2 = edgeTest(tri.B.pos, tri.C.pos, vec2(x,y));
                     float e3 = edgeTest(tri.C.pos, tri.A.pos, vec2(x,y));
@@ -254,17 +265,18 @@ namespace DoganGL {
                     float z = (BC.x * tri.A.pos.z) + (BC.y * tri.B.pos.z) + (BC.z * tri.C.pos.z);
                     if (context->fragments[y * width + x].drawn && z >= context->fragments[y * width + x].z)
                         continue;
+
                     // time to draw
                     context->fragments[y * width + x].drawn = true;
                     context->fragments[y * width + x].z = z;
 
                     // Temporary trivial interpolation for testing, must interpolate variable
                     // attributes once implemented!
-                    context->fragments[y * width + x].attribs.resize(tri.A.attribs.size());
                     for (int i = 0; i < tri.A.attribs.size(); i++) {
                         context->fragments[y * width + x].attribs[i] = 
                             (BC.x * tri.A.attribs[i]) + (BC.y * tri.B.attribs[i]) + (BC.z * tri.C.attribs[i]);
                     }
+                    
                 }
             }
         }

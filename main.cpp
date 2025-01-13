@@ -23,6 +23,35 @@ void displayTris(std::vector<DoganGL::Triangle> &tris) {
     }
 }
 
+template <typename Func, typename... Args>
+auto test(std::string name, Func&& func, Args&&... args)
+    -> std::enable_if_t<std::is_same_v<std::invoke_result_t<Func, Args...>, void>>
+{
+    auto start = std::chrono::high_resolution_clock::now();
+    std::invoke(std::forward<Func>(func), std::forward<Args>(args)...);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double, std::milli> elapsed = end - start;
+    std::cout << name << ": " << elapsed.count() << " ms" << std::endl;
+}
+
+template <typename Func, typename... Args>
+auto test(std::string name, Func&& func, Args&&... args)
+    -> std::enable_if_t<!std::is_same_v<std::invoke_result_t<Func, Args...>, void>,
+                        std::invoke_result_t<Func, Args...>>
+{
+    using ReturnType = std::invoke_result_t<Func, Args...>;
+
+    auto start = std::chrono::high_resolution_clock::now();
+    ReturnType result = std::invoke(std::forward<Func>(func), std::forward<Args>(args)...);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double, std::milli> elapsed = end - start;
+    std::cout << name << ": " << elapsed.count() << " ms\n";
+
+    return result;
+}
+
 int main() {
     DoganGL::Vertex triangleArr[3] = {
         {{-0.5f, -0.5f, 0.0f, 0.565, 0.11, 0.89}}, // Bottom-left
@@ -58,25 +87,21 @@ int main() {
     DoganGL::VAO vao;
     int pos_index = vao.addAttrib(3);
     col_index = vao.addAttrib(3);
-    DoganGL::bindVAO(context, vao);
+    test("bindVAO", DoganGL::bindVAO, context, vao);
 
-    DoganGL::loadVertexShader(context, vs);
-    DoganGL::loadVertices(context, triangle);
+    test("loadVertexShader", DoganGL::loadVertexShader, context, vs);
+    test("loadVertices", DoganGL::loadVertices, context, triangle);
 
-    DoganGL::applyVertexShader(context);
-    DoganGL::VertexPostProcessing(context);
+    test("applyVertexShader", DoganGL::applyVertexShader, context);
+    test("VertexPostProcessing", DoganGL::VertexPostProcessing, context);
 
-    displayTris(context->postProcessedTris);
+    // test("displayTris", displayTris, context->postProcessedTris);
 
-    DoganGL::loadFragmentShader(context, fs);
+    test("loadFragmentShader", DoganGL::loadFragmentShader, context, fs);
 
-    auto start = std::chrono::high_resolution_clock::now();
-    DoganGL::rasterize(context);
-    DoganGL::clearFrameBuffer(context, vec3(0.98,0.73,0.01));
-    DoganGL::applyFragmentShader(context);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    std::cout << "Elapsed time: " << elapsed.count() << " seconds" << std::endl;
+    test("rasterize", DoganGL::rasterize, context);
+    test("clearFrameBuffer", DoganGL::clearFrameBuffer, context, vec3(0.98,0.73,0.01));
+    test("applyFragmentShader", DoganGL::applyFragmentShader, context);
 
     context->img.write("C:/Users/dogan/Documents/DoganGL/img.png");
 }
