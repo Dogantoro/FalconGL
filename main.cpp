@@ -1,12 +1,16 @@
 #include "DoganGL.hpp"
 #include <iostream>
+#include <iostream>
+#include <chrono>
 
 vec4 vs(DoganGL::Vertex vert) {
     return vec4(vert.attribs[0], vert.attribs[1], vert.attribs[2], 1);
 }
 
+int col_index;
+
 vec4 fs(DoganGL::Fragment frag) {
-    return vec4(frag.uv, 1.0);
+    return vec4(frag.attribs[col_index], frag.attribs[col_index + 1], frag.attribs[col_index + 2], 1.0);
 }
 
 void displayTris(std::vector<DoganGL::Triangle> &tris) {
@@ -21,9 +25,9 @@ void displayTris(std::vector<DoganGL::Triangle> &tris) {
 
 int main() {
     DoganGL::Vertex triangleArr[3] = {
-        {{-0.5f, -0.5f, 0.0f}}, // Bottom-left
-        {{ 0.5f, -0.5f, 0.0f}}, // Bottom-right
-        {{ 0.0f,  0.5f, 0.0f}}  // Top-center
+        {{-0.5f, -0.5f, 0.0f, 0.565, 0.11, 0.89}}, // Bottom-left
+        {{ 0.5f, -0.5f, 0.0f, 0.89, 0.345, 0.071}}, // Bottom-right
+        {{ 0.0f,  0.5f, 0.0f, 0.392, 0.929, 0.141}}  // Top-center
     };
     // 1 Clip
     // DoganGL::Vertex triangleArr[3] = {
@@ -53,6 +57,7 @@ int main() {
 
     DoganGL::VAO vao;
     int pos_index = vao.addAttrib(3);
+    col_index = vao.addAttrib(3);
     DoganGL::bindVAO(context, vao);
 
     DoganGL::loadVertexShader(context, vs);
@@ -64,9 +69,14 @@ int main() {
     displayTris(context->postProcessedTris);
 
     DoganGL::loadFragmentShader(context, fs);
+
+    auto start = std::chrono::high_resolution_clock::now();
     DoganGL::rasterize(context);
     DoganGL::clearFrameBuffer(context, vec3(0.98,0.73,0.01));
     DoganGL::applyFragmentShader(context);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds" << std::endl;
 
     context->img.write("C:/Users/dogan/Documents/DoganGL/img.png");
 }

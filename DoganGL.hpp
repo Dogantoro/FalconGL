@@ -24,7 +24,7 @@ namespace DoganGL {
     struct Fragment {
         bool drawn;
         float z;
-        vec3 uv; // temporary -- change with more robust attributes later! Same with vertex
+        std::vector<float> attribs;
     };
     struct Image {
         int width, height;
@@ -88,6 +88,7 @@ namespace DoganGL {
         for (Vertex vertex : context->vertices) {
             ProcessedVertex tmp;
             tmp.pos = context->vertexShader(vertex);
+            tmp.attribs = vertex.attribs;
             context->postVSVertices.push_back(tmp);
         }
         return true;
@@ -259,7 +260,11 @@ namespace DoganGL {
 
                     // Temporary trivial interpolation for testing, must interpolate variable
                     // attributes once implemented!
-                    context->fragments[y * width + x].uv = BC;
+                    context->fragments[y * width + x].attribs.resize(tri.A.attribs.size());
+                    for (int i = 0; i < tri.A.attribs.size(); i++) {
+                        context->fragments[y * width + x].attribs[i] = 
+                            (BC.x * tri.A.attribs[i]) + (BC.y * tri.B.attribs[i]) + (BC.z * tri.C.attribs[i]);
+                    }
                 }
             }
         }
