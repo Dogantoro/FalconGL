@@ -53,11 +53,11 @@ auto test(std::string name, Func&& func, Args&&... args)
 }
 
 int main() {
-    DoganGL::Vertex triangleArr[3] = {
-        {{-0.5f, -0.5f, 0.0f, 0.565f, 0.11f, 0.89f}}, // Bottom-left
-        {{ 0.5f, -0.5f, 0.0f, 0.89f, 0.345f, 0.071f}}, // Bottom-right
-        {{ 0.0f,  0.5f, 0.0f, 0.392f, 0.929f, 0.141f}}  // Top-center
-    };
+    // DoganGL::Vertex triangleArr[3] = {
+    //     {{-0.5f, -0.5f, 0.0f, 0.565f, 0.11f, 0.89f}}, // Bottom-left
+    //     {{ 0.5f, -0.5f, 0.0f, 0.89f, 0.345f, 0.071f}}, // Bottom-right
+    //     {{ 0.0f,  0.5f, 0.0f, 0.392f, 0.929f, 0.141f}}  // Top-center
+    // };
     // 1 Clip
     // DoganGL::Vertex triangleArr[3] = {
     //     {{2.0f, 0.0f, 0.0f, 1.0f}}, // Outside (x > w)
@@ -70,19 +70,22 @@ int main() {
     //     {{-0.4f,  1.4f, 0.0f, 1.0f}}, // Inside
     //     {{ 1.4f, -0.4f, 0.0f, 1.0f}} // Inside
     // };
-    std::vector<DoganGL::Vertex> triangle(&triangleArr[0], &triangleArr[3]);
-    int viewportWidth = 800;   // Screen width
-    int viewportHeight = 600;  // Screen height
-    float nearVal = 0.0f;           // Near depth value
-    float farVal = 1.0f;            // Far depth value
+    DoganGL::Vertex triangleArr[6] = {
+        {{-0.25f, -0.5f,  0.0f, 0.565f, 0.11f, 0.89f}},
+        {{ 0.75f, -0.5f,  0.0f, 0.89f, 0.345f, 0.071f}},
+        {{ 0.25f,  0.5f,  0.0f, 0.392f, 0.929f, 0.141f}},
+        {{-0.75f,  0.5f,  0.0f, 0.565f, 0.11f, 0.89f}},
+        {{ 0.25f,  0.5f,  0.0f, 0.89f, 0.345f, 0.071f}},
+        {{-0.25f, -0.5f,  0.0f, 0.392f, 0.929f, 0.141f}}
+    };
+    std::vector<DoganGL::Vertex> triangle(&triangleArr[0], &triangleArr[6]);
+    int viewportWidth = 800;    // Screen width
+    int viewportHeight = 600;   // Screen height
+    float nearVal = 0.0f;       // Near depth value
+    float farVal = 1.0f;        // Far depth value
 
     DoganGL::Context * context = new DoganGL::Context();
-    context->viewport.width = viewportWidth;
-    context->viewport.height = viewportHeight;
-    context->viewport.nearVal = nearVal;
-    context->viewport.farVal = farVal;
-    context->viewport.x = 0;
-    context->viewport.y = 0;
+    DoganGL::setupViewport(context, viewportWidth, viewportHeight, nearVal, farVal, 0, 0);
 
     DoganGL::VAO vao;
     int pos_index = vao.addAttrib(3);
@@ -99,6 +102,7 @@ int main() {
 
     test("loadFragmentShader", DoganGL::loadFragmentShader, context, fs);
 
+    test("setupFrameBuffer", DoganGL::setupFrameBuffer, context);
     test("rasterize", DoganGL::rasterize, context);
     test("clearFrameBuffer", DoganGL::clearFrameBuffer, context, vec3(0.98,0.73,0.01));
     test("applyFragmentShader", DoganGL::applyFragmentShader, context);

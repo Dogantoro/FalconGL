@@ -77,6 +77,7 @@ namespace DoganGL {
             int width, height; // size of viewport in pixels
             float nearVal = 0.f; // mapping of near clipping plane to window coords
             float farVal  = 1.f; // mapping of far  clipping plane to window coords
+            bool setup = false;
         } viewport;
     };
     void bindVAO(Context * context, VAO &vao) {
@@ -189,9 +190,9 @@ namespace DoganGL {
         // Primitive Assembly
         for (int i = 0; i< context->postVSVertices.size()/3; i++) {
             Triangle t1;
-            t1.A = context->postVSVertices[i];
-            t1.B = context->postVSVertices[i+1];
-            t1.C = context->postVSVertices[i+2];
+            t1.A = context->postVSVertices[3*i];
+            t1.B = context->postVSVertices[3*i+1];
+            t1.C = context->postVSVertices[3*i+2];
             tris.push_back(t1);
         }
 
@@ -239,7 +240,19 @@ namespace DoganGL {
     inline float edgeTest(vec2 P1, vec2 P2, vec2 P) {
         return (P.y - P1.y)*(P2.x-P1.x) - (P.x-P1.x)*(P2.y-P1.y);
     }
-    void rasterize(Context * context) {
+    void setupViewport(Context * context, int width, int height, float near, float far, int x, int y) {
+        auto &viewport = context->viewport;
+        viewport.width   = width;
+        viewport.height  = height;
+        viewport.nearVal = near;
+        viewport.farVal  = far;
+        viewport.x       = x;
+        viewport.y       = y;
+        viewport.setup   = true;
+    }
+    bool setupFrameBuffer(Context * context) {
+        if (!(context->viewport.setup))
+            return false;
         int width = context->viewport.width;
         int height = context->viewport.height;
         context->fragments.clear();
@@ -250,7 +263,12 @@ namespace DoganGL {
         for (int i = 0; i < width * height; i++) {
             context->fragments[i].index = i * numAttribs;
         }
-        // TODO -- do not iterate over all fragments for every tri, this is so inefficient
+        return true;
+    }
+    void rasterize(Context * context) {
+        int width = context->viewport.width;
+        int height = context->viewport.height;
+        int numAttribs = (int) (context->vertices[0].attribs.size());
         for (const auto &tri : context->postProcessedTris) {
             auto xmin = (int) floorf(std::min({tri.A.pos.x, tri.B.pos.x, tri.C.pos.x}));
             auto xmax = (int) floorf(std::max({tri.A.pos.x, tri.B.pos.x, tri.C.pos.x}));
