@@ -41,7 +41,7 @@ namespace DoganGL {
     };
     struct Image {
         int width, height;
-        std::vector<char> pixels;
+        std::vector<unsigned char> pixels;
         bool write(std::string path) {
             return stbi_write_png(path.c_str(), width, height, 3, pixels.data(), width * 3);
         }
@@ -306,7 +306,7 @@ namespace DoganGL {
                     rowF12 += B12;
                     rowF23 += B23;
                     rowF31 += B31;
-                    if (!((rowF12 < 0 && rowF23 < 0 && rowF31 < 0) || (rowF12 > 0 && rowF23 > 0 && rowF31 > 0))) {
+                    if (!((rowF12 <= 0 && rowF23 <= 0 && rowF31 <= 0) || (rowF12 >= 0 && rowF23 >= 0 && rowF31 >= 0))) {
                         if (hit)
                             break;
                         continue;
@@ -375,5 +375,42 @@ namespace DoganGL {
                 context->img.pixels[3 * (j * width + i) + 2] = B;
             }
         }
+    }
+    bool AA(Context * context, const int scale) {
+        if (scale & (scale - 1) != 0) {
+            return false;
+        }
+        auto width = context->viewport.width;
+        auto height = context->viewport.height;
+        if (width % scale != 0 || height % scale != 0) {
+            return false;
+        }
+        std::vector<unsigned char> pixels;
+        int superscale = scale * scale;
+        pixels.resize(3 * width * height / (superscale));
+        int newWidth = width / scale;
+        for (int j = 0; j < height / scale; j++) {
+            for (int i = 0; i < width / scale; i++) {
+                float R = 0;
+                float G = 0;
+                float B = 0;
+                for (int x = 0; x < scale; x++) {
+                    for (int y = 0; y < scale; y++) {
+                        R += context->img.pixels[3 * ((scale * j + y) * width + scale * i + x)];
+                        G += context->img.pixels[3 * ((scale * j + y) * width + scale * i + x) + 1];
+                        B += context->img.pixels[3 * ((scale * j + y) * width + scale * i + x) + 2];
+                    }
+                }
+                R /= superscale; 
+                G /= superscale; 
+                B /= superscale;
+                pixels[3 * (j * newWidth + i)] =     (unsigned char) round(R);
+                pixels[3 * (j * newWidth + i) + 1] = (unsigned char) round(G);
+                pixels[3 * (j * newWidth + i) + 2] = (unsigned char) round(B);
+            }
+        }
+        context->img.pixels = pixels;
+        context->img.height /= scale;
+        context->img.width /= scale;
     }
 }
