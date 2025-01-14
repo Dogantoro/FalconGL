@@ -274,17 +274,51 @@ namespace DoganGL {
             auto xmax = (int) floorf(std::max({tri.A.pos.x, tri.B.pos.x, tri.C.pos.x}));
             auto ymin = (int) floorf(std::min({tri.A.pos.y, tri.B.pos.y, tri.C.pos.y}));
             auto ymax = (int) floorf(std::max({tri.A.pos.y, tri.B.pos.y, tri.C.pos.y}));
+
+            // Ax+By+C represents the edge function
+            const float &x1 = tri.A.pos.x, &y1 = tri.A.pos.y;
+            const float &x2 = tri.B.pos.x, &y2 = tri.B.pos.y;
+            const float &x3 = tri.C.pos.x, &y3 = tri.C.pos.y;
+
+            float A12 = y2 - y1;
+            float B12 = -(x2 - x1);
+            float C12 = x1 * y2 - x2 * y1;
+
+            float A23 = y3 - y2;
+            float B23 = -(x3 - x2);
+            float C23 = x2 * y3 - x3 * y2;
+
+            float A31 = y1 - y3;
+            float B31 = -(x1 - x3);
+            float C31 = x3 * y1 - x1 * y3;
+
+            float f12 = A12 * xmin + B12 * ymin - C12;
+            float f23 = A23 * xmin + B23 * ymin - C23;
+            float f31 = A31 * xmin + B31 * ymin - C31;
+            float denom = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
+
             for (int x = __max(xmin, 0); x <= xmax && x < width; x++) {
+                float rowF12 = f12 - B12;
+                float rowF23 = f23 - B23;
+                float rowF31 = f31 - B31;
+                bool hit = false;
                 for (int y = __max(ymin, 0); y <= ymax && y < height; y++) {
-                    //auto start = std::chrono::high_resolution_clock::now();
-                    float e1 = edgeTest(tri.A.pos, tri.B.pos, vec2(x,y));
-                    float e2 = edgeTest(tri.B.pos, tri.C.pos, vec2(x,y));
-                    float e3 = edgeTest(tri.C.pos, tri.A.pos, vec2(x,y));
-                    if (!((e1 < 0 && e2 < 0 && e3 < 0) || (e1 > 0 && e2 > 0 && e3 > 0)))
+                    rowF12 += B12;
+                    rowF23 += B23;
+                    rowF31 += B31;
+                    if (!((rowF12 < 0 && rowF23 < 0 && rowF31 < 0) || (rowF12 > 0 && rowF23 > 0 && rowF31 > 0))) {
+                        if (hit)
+                            break;
                         continue;
+                    }
+                    hit = true;
                     // at this point the fragment lies on a triangle and interpolation must occur
                     // first do z-test to prevent unneeded work
-                    vec3 BC = barycenterize(tri, vec2(x,y));
+                    float lambda1 = abs(rowF23 / denom);
+                    float lambda2 = abs(rowF31 / denom);
+                    float lambda3 = 1.0f - lambda1 - lambda2;
+                    vec3 BC({lambda1, lambda2, lambda3});
+
                     float z = (BC.x * tri.A.pos.z) + (BC.y * tri.B.pos.z) + (BC.z * tri.C.pos.z);
                     if (context->fragments[y * width + x].drawn && z >= context->fragments[y * width + x].z)
                         continue;
@@ -293,15 +327,16 @@ namespace DoganGL {
                     context->fragments[y * width + x].drawn = true;
                     context->fragments[y * width + x].z = z;
 
-                    // Temporary trivial interpolation for testing, must interpolate variable
-                    // attributes once implemented!
                     auto index = context->fragments[y * width + x].index;
                     for (int i = 0; i < numAttribs; i++) {
                         context->fragmentAttributes[index + i] = 
                             (BC.x * tri.A.attribs[i]) + (BC.y * tri.B.attribs[i]) + (BC.z * tri.C.attribs[i]);
                     }
-                    
+
                 }
+                f12 += A12;
+                f23 += A23;
+                f31 += A31;
             }
         }
     }
