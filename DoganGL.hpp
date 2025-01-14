@@ -1,12 +1,13 @@
 #include <functional>
 #include <vector>
 #include <glm/glm.hpp>
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "libs/stb-write.hpp"
 #include <string>
 
-#include <chrono>
-#include <iostream>
+#pragma warning(push)
+#pragma warning(disable: 4996)
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "libs/stb-write.hpp"
+#pragma warning(pop)
 
 using glm::vec2;
 using glm::vec3;
@@ -27,13 +28,15 @@ namespace DoganGL {
     struct Fragment {
         bool drawn;
         float z;
-        std::vector<float> attribs;
+        int index;
+        //std::vector<float> attribs;
         Fragment() {
             drawn = false;
+            index = -1;
         }
-        Fragment(int numAttribs) {
+        Fragment(int index) {
             drawn = false;
-            attribs.resize(numAttribs);
+            this->index = index;
         }
     };
     struct Image {
@@ -55,12 +58,13 @@ namespace DoganGL {
         }
     };
     using VertexShader = std::function<vec4(const Vertex&)>;
-    using FragmentShader = std::function<vec4(const Fragment&)>;
+    using FragmentShader = std::function<vec4(const float * attribs)>;
     struct Context {
         std::vector<Vertex> vertices;
         std::vector<ProcessedVertex> postVSVertices;
         std::vector<Triangle> postProcessedTris;
         std::vector<Fragment> fragments;
+        std::vector<float> fragmentAttributes;
         Image img;
         VAO vao;
         bool VAObinded = false;
@@ -170,9 +174,9 @@ namespace DoganGL {
     }
     void viewportTransform(Context * context, ProcessedVertex &vert) {
         const auto &viewport = context->viewport;
-        vert.pos.x = (viewport.width/2.0)  * (vert.pos.x + 1) + viewport.x;
-        vert.pos.y = (viewport.height/2.0) * (vert.pos.y + 1) + viewport.y;
-        vert.pos.z = ((viewport.farVal - viewport.nearVal)/2.0) * vert.pos.z + ((viewport.farVal + viewport.nearVal)/2.0);
+        vert.pos.x = (viewport.width/2.0f)  * (vert.pos.x + 1) + viewport.x;
+        vert.pos.y = (viewport.height/2.0f) * (vert.pos.y + 1) + viewport.y;
+        vert.pos.z = ((viewport.farVal - viewport.nearVal)/2.0f) * vert.pos.z + ((viewport.farVal + viewport.nearVal)/2.0f);
     }
     bool VertexPostProcessing(Context * context) {
         if (!(context->postVSVertices.size()))
@@ -215,8 +219,9 @@ namespace DoganGL {
         }
 
         context->postProcessedTris = tris;
+        return true;
     }
-    inline vec3 barycenterize(const Triangle tri, const vec2 cartesian) {
+    inline vec3 barycenterize(const Triangle &tri, const vec2 &cartesian) {
         auto &x  = cartesian.x;
         auto &y  = cartesian.y;
         auto &x1 = tri.A.pos.x;
@@ -235,22 +240,22 @@ namespace DoganGL {
         return (P.y - P1.y)*(P2.x-P1.x) - (P.x-P1.x)*(P2.y-P1.y);
     }
     void rasterize(Context * context) {
-        float width = context->viewport.width;
-        float height = context->viewport.height;
+        int width = context->viewport.width;
+        int height = context->viewport.height;
         context->fragments.clear();
-        context->fragments.reserve(width * height);
-        float numAttribs = context-> vertices[0].attribs.size();
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                context->fragments.emplace_back(numAttribs);
-            }
+        context->fragments.resize(width * height);
+        context->fragmentAttributes.clear();
+        int numAttribs = (int) (context->vertices[0].attribs.size());
+        context->fragmentAttributes.resize(width * height * numAttribs);
+        for (int i = 0; i < width * height; i++) {
+            context->fragments[i].index = i * numAttribs;
         }
         // TODO -- do not iterate over all fragments for every tri, this is so inefficient
         for (const auto &tri : context->postProcessedTris) {
-            auto xmin = floorf(std::min({tri.A.pos.x, tri.B.pos.x, tri.C.pos.x}));
-            auto xmax = floorf(std::max({tri.A.pos.x, tri.B.pos.x, tri.C.pos.x}));
-            auto ymin = floorf(std::min({tri.A.pos.y, tri.B.pos.y, tri.C.pos.y}));
-            auto ymax = floorf(std::max({tri.A.pos.y, tri.B.pos.y, tri.C.pos.y}));
+            auto xmin = (int) floorf(std::min({tri.A.pos.x, tri.B.pos.x, tri.C.pos.x}));
+            auto xmax = (int) floorf(std::max({tri.A.pos.x, tri.B.pos.x, tri.C.pos.x}));
+            auto ymin = (int) floorf(std::min({tri.A.pos.y, tri.B.pos.y, tri.C.pos.y}));
+            auto ymax = (int) floorf(std::max({tri.A.pos.y, tri.B.pos.y, tri.C.pos.y}));
             for (int x = __max(xmin, 0); x <= xmax && x < width; x++) {
                 for (int y = __max(ymin, 0); y <= ymax && y < height; y++) {
                     //auto start = std::chrono::high_resolution_clock::now();
@@ -272,8 +277,9 @@ namespace DoganGL {
 
                     // Temporary trivial interpolation for testing, must interpolate variable
                     // attributes once implemented!
-                    for (int i = 0; i < tri.A.attribs.size(); i++) {
-                        context->fragments[y * width + x].attribs[i] = 
+                    auto index = context->fragments[y * width + x].index;
+                    for (int i = 0; i < numAttribs; i++) {
+                        context->fragmentAttributes[index + i] = 
                             (BC.x * tri.A.attribs[i]) + (BC.y * tri.B.attribs[i]) + (BC.z * tri.C.attribs[i]);
                     }
                     
@@ -290,13 +296,14 @@ namespace DoganGL {
         for (int j = 0; j < height; j++) {
             for (int i = 0; i < width; i++) {
                 if (context->fragments[j * width + i].drawn) {
-                    vec4 pixel = context->fragmentShader(context->fragments[j * width + i]);
+                    vec4 pixel = context->fragmentShader(context->fragmentAttributes.data() + (context->fragments[j * width + i].index));
                     context->img.pixels[3 * (j * width + i)]     = ((unsigned char) (255.f * pixel.r));
                     context->img.pixels[3 * (j * width + i) + 1] = ((unsigned char) (255.f * pixel.g));
                     context->img.pixels[3 * (j * width + i) + 2] = ((unsigned char) (255.f * pixel.b));
                 }
             }
         }
+        return true;
     }
     void clearFrameBuffer(Context * context, vec3 rgb) {
         auto width = context->viewport.width;
@@ -304,12 +311,15 @@ namespace DoganGL {
         context->img.pixels.clear();
         context->img.width = width;
         context->img.height = height;
-        context->img.pixels.reserve(3 * height * width);
+        context->img.pixels.resize(3 * height * width);
+        unsigned char R = (unsigned char) (255.f * rgb.r);
+        unsigned char G = (unsigned char) (255.f * rgb.g);
+        unsigned char B = (unsigned char) (255.f * rgb.b);
         for (int j = 0; j < height; j++) {
             for (int i = 0; i < width; i++) {
-                context->img.pixels.push_back((unsigned char) (255.f * rgb.r));
-                context->img.pixels.push_back((unsigned char) (255.f * rgb.g));
-                context->img.pixels.push_back((unsigned char) (255.f * rgb.b));
+                context->img.pixels[3 * (j * width + i)] = R;
+                context->img.pixels[3 * (j * width + i) + 1] = G;
+                context->img.pixels[3 * (j * width + i) + 2] = B;
             }
         }
     }

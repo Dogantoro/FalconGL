@@ -9,8 +9,8 @@ vec4 vs(DoganGL::Vertex vert) {
 
 int col_index;
 
-vec4 fs(DoganGL::Fragment frag) {
-    return vec4(frag.attribs[col_index], frag.attribs[col_index + 1], frag.attribs[col_index + 2], 1.0);
+vec4 fs(const float * attribs) {
+    return vec4(attribs[col_index], attribs[col_index + 1], attribs[col_index + 2], 1.0);
 }
 
 void displayTris(std::vector<DoganGL::Triangle> &tris) {
@@ -54,9 +54,9 @@ auto test(std::string name, Func&& func, Args&&... args)
 
 int main() {
     DoganGL::Vertex triangleArr[3] = {
-        {{-0.5f, -0.5f, 0.0f, 0.565, 0.11, 0.89}}, // Bottom-left
-        {{ 0.5f, -0.5f, 0.0f, 0.89, 0.345, 0.071}}, // Bottom-right
-        {{ 0.0f,  0.5f, 0.0f, 0.392, 0.929, 0.141}}  // Top-center
+        {{-0.5f, -0.5f, 0.0f, 0.565f, 0.11f, 0.89f}}, // Bottom-left
+        {{ 0.5f, -0.5f, 0.0f, 0.89f, 0.345f, 0.071f}}, // Bottom-right
+        {{ 0.0f,  0.5f, 0.0f, 0.392f, 0.929f, 0.141f}}  // Top-center
     };
     // 1 Clip
     // DoganGL::Vertex triangleArr[3] = {
@@ -71,8 +71,8 @@ int main() {
     //     {{ 1.4f, -0.4f, 0.0f, 1.0f}} // Inside
     // };
     std::vector<DoganGL::Vertex> triangle(&triangleArr[0], &triangleArr[3]);
-    float viewportWidth = 800.0f;   // Screen width
-    float viewportHeight = 600.0f;  // Screen height
+    int viewportWidth = 800;   // Screen width
+    int viewportHeight = 600;  // Screen height
     float nearVal = 0.0f;           // Near depth value
     float farVal = 1.0f;            // Far depth value
 
