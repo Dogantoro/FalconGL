@@ -107,5 +107,5 @@ int main() {
     test("clearFrameBuffer", DoganGL::clearFrameBuffer, context, vec3(0.98,0.73,0.01));
     test("applyFragmentShader", DoganGL::applyFragmentShader, context);
 
-    context->img.write("C:/Users/dogan/Documents/DoganGL/img.png");
+    test("imageWrite (external)", &DoganGL::Image::write, context->img, "C:/Users/dogan/Documents/DoganGL/img.png");
 }
