@@ -275,7 +275,6 @@ namespace DoganGL {
             auto ymin = (int) floorf(std::min({tri.A.pos.y, tri.B.pos.y, tri.C.pos.y}));
             auto ymax = (int) floorf(std::max({tri.A.pos.y, tri.B.pos.y, tri.C.pos.y}));
 
-
             // Ax+By+C represents the edge function
             const float &x1 = tri.A.pos.x, &y1 = tri.A.pos.y;
             const float &x2 = tri.B.pos.x, &y2 = tri.B.pos.y;
@@ -302,12 +301,17 @@ namespace DoganGL {
                 float rowF12 = f12 - B12;
                 float rowF23 = f23 - B23;
                 float rowF31 = f31 - B31;
+                bool hit = false;
                 for (int y = __max(ymin, 0); y <= ymax && y < height; y++) {
                     rowF12 += B12;
                     rowF23 += B23;
                     rowF31 += B31;
-                    if (!((rowF12 < 0 && rowF23 < 0 && rowF31 < 0) || (rowF12 > 0 && rowF23 > 0 && rowF31 > 0)))
+                    if (!((rowF12 < 0 && rowF23 < 0 && rowF31 < 0) || (rowF12 > 0 && rowF23 > 0 && rowF31 > 0))) {
+                        if (hit)
+                            break;
                         continue;
+                    }
+                    hit = true;
                     // at this point the fragment lies on a triangle and interpolation must occur
                     // first do z-test to prevent unneeded work
                     float lambda1 = abs(rowF23 / denom);
