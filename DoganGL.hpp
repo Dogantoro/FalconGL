@@ -1,7 +1,11 @@
+// Copyright 2024 Dogan Torosdagli
+#pragma once
+
 #include <functional>
 #include <vector>
 #include <glm/glm.hpp>
 #include <string>
+#include <algorithm>
 
 #pragma warning(push)
 #pragma warning(disable: 4996)
@@ -57,7 +61,7 @@ namespace DoganGL {
             return tmp;
         }
     };
-    using VertexShader = std::function<vec4(const Vertex&)>;
+    using VertexShader = std::function<vec4(const Vertex&, const float * uniforms)>;
     using FragmentShader = std::function<vec4(const float * attribs)>;
     struct Context {
         std::vector<Vertex> vertices;
@@ -65,6 +69,7 @@ namespace DoganGL {
         std::vector<Triangle> postProcessedTris;
         std::vector<Fragment> fragments;
         std::vector<float> fragmentAttributes;
+        std::vector<float> uniforms;
         Image img;
         VAO vao;
         bool VAObinded = false;
@@ -80,6 +85,22 @@ namespace DoganGL {
             bool setup = false;
         } viewport;
     };
+    int addUniform(Context * context, const int size) {
+        int index = (int) context->uniforms.size();
+        context->uniforms.resize(context->uniforms.size() + size);
+        return index;
+    }
+    int addUniform(Context * context, const int size, const float * data) {
+        int index = (int) context->uniforms.size();
+        std::copy(data, data+size, std::back_inserter(context->uniforms));
+        return index;
+    }
+    // This function doesn't check if data fits in uniforms buffer,
+    // if it doesn't fit, it will throw an error! Ensure uniform
+    // is already created from addUniform();
+    inline void replaceUniform(Context * context, int index, int size, const float * data) {
+        std::copy(data, data+size, context->uniforms.begin() + index);
+    }
     void bindVAO(Context * context, VAO &vao) {
         context->vao = vao;
         context->VAObinded = true;
@@ -100,9 +121,10 @@ namespace DoganGL {
             return false;
         context->postVSVertices.clear();
         context->postVSVertices.reserve(context->vertices.size());
+        float * uniforms = context->uniforms.data();
         for (Vertex vertex : context->vertices) {
             ProcessedVertex tmp;
-            tmp.pos = context->vertexShader(vertex);
+            tmp.pos = context->vertexShader(vertex,uniforms);
             tmp.attribs = vertex.attribs;
             context->postVSVertices.push_back(tmp);
         }
@@ -135,7 +157,7 @@ namespace DoganGL {
                 auto v4alpha = ((sign * inside[0].pos[3] - inside[0].pos[axis])/(outside[0].pos[axis] - inside[0].pos[axis]));
                 auto v5alpha = ((sign * inside[0].pos[3] - inside[1].pos[axis])/(outside[0].pos[axis] - inside[1].pos[axis]));
                 v4.pos = inside[0].pos + v4alpha * (outside[0].pos - inside[0].pos);
-                v5.pos = inside[1].pos + v4alpha *(outside[0].pos - inside[1].pos);
+                v5.pos = inside[1].pos + v5alpha * (outside[0].pos - inside[1].pos);
                 v4.attribs.resize(inside[0].attribs.size());
                 v5.attribs.resize(inside[0].attribs.size());
                 for (int i = 0; i < inside[0].attribs.size(); i++) {
@@ -197,7 +219,7 @@ namespace DoganGL {
         }
 
         // Clipping
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 6; i++) {
             std::vector<Triangle> trisToClip;
             std::swap(trisToClip, tris);
             for (const auto& tri : trisToClip) {
@@ -377,7 +399,7 @@ namespace DoganGL {
         }
     }
     bool AA(Context * context, const int scale) {
-        if (scale & (scale - 1) != 0) {
+        if ((scale & (scale - 1)) != 0) {
             return false;
         }
         auto width = context->viewport.width;
@@ -412,5 +434,6 @@ namespace DoganGL {
         context->img.pixels = pixels;
         context->img.height /= scale;
         context->img.width /= scale;
+        return true;
     }
 }

@@ -1,10 +1,16 @@
-#include "DoganGL.hpp"
 #include <iostream>
-#include <iostream>
+#include <string>
+#include <sstream>
 #include <chrono>
+#include <glm/glm.hpp>
+#include <glm/ext.hpp>
+#include "DoganGL.hpp"
 
-vec4 vs(DoganGL::Vertex vert) {
-    return vec4(vert.attribs[0], vert.attribs[1], vert.attribs[2], 1);
+int proj_index;
+
+vec4 vs(DoganGL::Vertex vert, const float * uniforms) {
+    glm::mat4 proj = glm::make_mat4(&uniforms[proj_index]);
+    return proj * vec4(vert.attribs[0], vert.attribs[1], vert.attribs[2], 1);
 }
 
 int col_index;
@@ -21,6 +27,18 @@ void displayTris(std::vector<DoganGL::Triangle> &tris) {
         std::cout << "\t(" << tri.B.pos.x << "," << tri.B.pos.y << "," << tri.B.pos.z << "),\n";
         std::cout << "\t(" << tri.C.pos.x << "," << tri.C.pos.y << "," << tri.C.pos.z << ")},\n\n";
     }
+}
+
+std::string trisToString(std::vector<DoganGL::Triangle> &tris) {
+    std::stringstream str;
+    int i = 0;
+    for (const auto &tri : tris) {
+        str << "Triangle " << i++ << ": {\n";
+        str << "\t(" << tri.A.pos.x << "," << tri.A.pos.y << "," << tri.A.pos.z << "),\n";
+        str << "\t(" << tri.B.pos.x << "," << tri.B.pos.y << "," << tri.B.pos.z << "),\n";
+        str << "\t(" << tri.C.pos.x << "," << tri.C.pos.y << "," << tri.C.pos.z << ")},\n\n";
+    }
+    return str.str();
 }
 
 template <typename Func, typename... Args>
@@ -71,20 +89,18 @@ int main() {
     //     {{ 1.4f, -0.4f, 0.0f, 1.0f}} // Inside
     // };
     DoganGL::Vertex triangleArr[6] = {
-        {{-0.25f, -0.5f,  0.0f, 0.565f, 0.11f,  0.89f }},
-        {{ 0.75f, -0.5f,  0.0f, 0.89f,  0.345f, 0.071f}},
-        {{ 0.25f,  0.5f,  0.0f, 0.392f, 0.929f, 0.141f}},
-        {{-0.75f,  0.5f,  0.0f, 0.89f,  0.345f, 0.071f}},
-        {{ 0.25f,  0.5f,  0.0f, 0.392f, 0.929f, 0.141f}},
-        {{-0.25f, -0.5f,  0.0f, 0.565f, 0.11f,  0.89f }}
-        
-        
+        {{-0.25f, -0.5f,  -15.5f, 0.565f, 0.11f,  0.89f }},
+        {{ 0.75f, -0.5f,  -15.5f, 0.89f,  0.345f, 0.071f}},
+        {{ 0.25f,  0.5f,  -15.5f, 0.392f, 0.929f, 0.141f}},
+        {{-0.75f,  0.5f,  -1.0f, 0.89f,  0.345f, 0.071f}},
+        {{ 0.25f,  0.5f,  -1.0f, 0.392f, 0.929f, 0.141f}},
+        {{-0.25f, -0.5f,  -1.0f, 0.565f, 0.11f,  0.89f }}
     };
     std::vector<DoganGL::Vertex> triangle(&triangleArr[0], &triangleArr[6]);
     int viewportWidth  = 2 * 800;   // Screen width
     int viewportHeight = 2 * 600;   // Screen height
-    float nearVal = 0.0f;           // Near depth value
-    float farVal = 1.0f;            // Far depth value
+    float nearVal = 0.1f;           // Near depth value
+    float farVal = 100.0f;            // Far depth value
 
     DoganGL::Context * context = new DoganGL::Context();
     DoganGL::setupViewport(context, viewportWidth, viewportHeight, nearVal, farVal, 0, 0);
@@ -93,6 +109,9 @@ int main() {
     int pos_index = vao.addAttrib(3);
     col_index = vao.addAttrib(3);
     test("bindVAO", DoganGL::bindVAO, context, vao);
+
+    glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)viewportWidth/(float)viewportHeight, 0.1f, 100.0f);
+    proj_index = DoganGL::addUniform(context, 16, glm::value_ptr(proj));
 
     test("loadVertexShader", DoganGL::loadVertexShader, context, vs);
     test("loadVertices", DoganGL::loadVertices, context, triangle);
