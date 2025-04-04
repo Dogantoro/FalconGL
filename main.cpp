@@ -13,10 +13,20 @@ vec4 vs(DoganGL::Vertex vert, const float * uniforms) {
     return proj * vec4(vert.attribs[0], vert.attribs[1], vert.attribs[2], 1);
 }
 
+int pos_index;
 int col_index;
+int norm_index;
 
 vec4 fs(const float * attribs) {
-    return vec4(attribs[col_index], attribs[col_index + 1], attribs[col_index + 2], 1.0);
+    vec3 color = vec3(attribs[col_index],  attribs[col_index + 1],  attribs[col_index + 2]);
+    vec3 pos   = vec3(attribs[pos_index],  attribs[pos_index + 1],  attribs[pos_index + 2]);
+    vec3 norm  = vec3(attribs[norm_index], attribs[norm_index + 1], attribs[norm_index + 2]);
+    
+    vec3 LPos = vec3(2.f,0.f,0.f);
+
+    auto diffuse = clamp(glm::dot(glm::normalize(LPos - pos), glm::normalize(norm)), 0.0f, 1.0f);
+    vec3 col = color * (diffuse + 0.1f);
+    return vec4(col, 1.0);
 }
 
 void displayTris(std::vector<DoganGL::Triangle> &tris) {
@@ -88,26 +98,53 @@ int main() {
     //     {{-0.4f,  1.4f, 0.0f, 1.0f}}, // Inside
     //     {{ 1.4f, -0.4f, 0.0f, 1.0f}} // Inside
     // };
-    DoganGL::Vertex triangleArr[6] = {
-        {{-0.25f, -0.5f,  -15.5f, 0.565f, 0.11f,  0.89f }},
-        {{ 0.75f, -0.5f,  -15.5f, 0.89f,  0.345f, 0.071f}},
-        {{ 0.25f,  0.5f,  -15.5f, 0.392f, 0.929f, 0.141f}},
-        {{-0.75f,  0.5f,  -1.0f, 0.89f,  0.345f, 0.071f}},
-        {{ 0.25f,  0.5f,  -1.0f, 0.392f, 0.929f, 0.141f}},
-        {{-0.25f, -0.5f,  -1.0f, 0.565f, 0.11f,  0.89f }}
+    // DoganGL::Vertex triangleArr[6] = {
+    //     {{-0.25f, -0.5f,  -15.5f, 0.565f, 0.11f,  0.89f }},
+    //     {{ 0.75f, -0.5f,  -15.5f, 0.89f,  0.345f, 0.071f}},
+    //     {{ 0.25f,  0.5f,  -15.5f, 0.392f, 0.929f, 0.141f}},
+    //     {{-0.75f,  0.5f,  -1.0f, 0.89f,  0.345f, 0.071f}},
+    //     {{ 0.25f,  0.5f,  -1.0f, 0.392f, 0.929f, 0.141f}},
+    //     {{-0.25f, -0.5f,  -1.0f, 0.565f, 0.11f,  0.89f }}
+    // };
+
+    DoganGL::Vertex A = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, -0.57735027f, -0.21132487f, 0.78867513f}};
+    DoganGL::Vertex B = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f,  0.57735027f, -0.21132487f, 0.78867513f}};
+    DoganGL::Vertex C = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f,  0.0f,         0.70710678f, 0.70710678f}};
+    DoganGL::Vertex D = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f,  0.0f,         0.07161243f, 0.99743253f}};
+
+    DoganGL::Vertex A1 = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, -0.81649658f, 0.40824829f, 0.40824829f}};
+    DoganGL::Vertex D1 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, -0.81649658f, 0.40824829f, 0.40824829f}};
+    DoganGL::Vertex C1 = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f, -0.81649658f, 0.40824829f, 0.40824829f}};
+ 
+    DoganGL::Vertex A2 = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, 0.0f, -0.70710678f, 0.70710678f}};
+    DoganGL::Vertex B2 = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f, 0.0f, -0.70710678f, 0.70710678f}};
+    DoganGL::Vertex D2 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, 0.0f, -0.70710678f, 0.70710678f}};
+
+    DoganGL::Vertex B3 = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f, 0.81649658f, 0.40824829f, 0.40824829f}};
+    DoganGL::Vertex C3 = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f, 0.81649658f, 0.40824829f, 0.40824829f}};
+    DoganGL::Vertex D3 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, 0.81649658f, 0.40824829f, 0.40824829f}};
+
+    DoganGL::Vertex triangleArr[9] = {
+        A1,D1,C1,
+        A2,B2,D2,
+        B3,C3,D3
     };
-    std::vector<DoganGL::Vertex> triangle(&triangleArr[0], &triangleArr[6]);
-    int viewportWidth  = 2 * 800;   // Screen width
-    int viewportHeight = 2 * 600;   // Screen height
-    float nearVal = 0.1f;           // Near depth value
+    std::vector<DoganGL::Vertex> triangle(&triangleArr[0], &triangleArr[9]);
+    int viewportWidth  = 800;   // Screen width
+    int viewportHeight = 600;   // Screen height
+    float nearVal = 0.1f;          // Near depth value
     float farVal = 100.0f;            // Far depth value
 
     DoganGL::Context * context = new DoganGL::Context();
     DoganGL::setupViewport(context, viewportWidth, viewportHeight, nearVal, farVal, 0, 0);
 
     DoganGL::VAO vao;
-    int pos_index = vao.addAttrib(3);
+    pos_index = vao.addAttrib(3);
     col_index = vao.addAttrib(3);
+    norm_index = vao.addAttrib(3);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    
     test("bindVAO", DoganGL::bindVAO, context, vao);
 
     glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)viewportWidth/(float)viewportHeight, 0.1f, 100.0f);
@@ -128,7 +165,12 @@ int main() {
     test("clearFrameBuffer", DoganGL::clearFrameBuffer, context, vec3(0.98,0.73,0.01));
     test("applyFragmentShader", DoganGL::applyFragmentShader, context);
 
-    test("antialiasing downscaling", DoganGL::AA, context, 2);
+    //test("antialiasing downscaling", DoganGL::AA, context, 2);
 
-    test("imageWrite (external)", &DoganGL::Image::write, context->img, "C:/Users/dogan/Documents/DoganGL/img.png");
+    test("imageWrite (external)", &DoganGL::Image::write, context->img, "C:/Users/dogan/Documents/DoganGL/img.bmp");
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> elapsed = end - start;
+    std::cout << "Overall" << ": " << elapsed.count() << " ms\n" << std::endl;
+    std::cout << "FPS possible: " << 1000/elapsed.count() << std::endl;
 }

@@ -7,11 +7,13 @@
 #include <string>
 #include <algorithm>
 
-#pragma warning(push)
-#pragma warning(disable: 4996)
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "libs/stb-write.hpp"
-#pragma warning(pop)
+// #pragma warning(push)
+// #pragma warning(disable: 4996)
+// #define STB_IMAGE_WRITE_IMPLEMENTATION
+// #include "libs/stb-write.hpp"
+// #pragma warning(pop)
+
+#include "libs/bmp-write.hpp"
 
 using glm::vec2;
 using glm::vec3;
@@ -46,8 +48,9 @@ namespace DoganGL {
     struct Image {
         int width, height;
         std::vector<unsigned char> pixels;
-        bool write(std::string path) {
-            return stbi_write_png(path.c_str(), width, height, 3, pixels.data(), width * 3);
+        void write(std::string path) {
+            // return stbi_write_png(path.c_str(), width, height, 3, pixels.data(), width * 3);
+            generateBitmapImage(pixels.data(), height, width, path.c_str());
         }
     };
     struct VAO {
@@ -277,9 +280,9 @@ namespace DoganGL {
             return false;
         int width = context->viewport.width;
         int height = context->viewport.height;
-        context->fragments.clear();
+        //context->fragments.clear();
         context->fragments.resize(width * height);
-        context->fragmentAttributes.clear();
+        // context->fragmentAttributes.clear();
         int numAttribs = (int) (context->vertices[0].attribs.size());
         context->fragmentAttributes.resize(width * height * numAttribs);
         for (int i = 0; i < width * height; i++) {
@@ -317,7 +320,7 @@ namespace DoganGL {
             float f12 = A12 * xmin + B12 * ymin - C12;
             float f23 = A23 * xmin + B23 * ymin - C23;
             float f31 = A31 * xmin + B31 * ymin - C31;
-            float denom = ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
+            float denom = 1.0f / ((y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3));
 
             for (int x = __max(xmin, 0); x <= xmax && x < width; x++) {
                 float rowF12 = f12 - B12;
@@ -336,8 +339,8 @@ namespace DoganGL {
                     hit = true;
                     // at this point the fragment lies on a triangle and interpolation must occur
                     // first do z-test to prevent unneeded work
-                    float lambda1 = abs(rowF23 / denom);
-                    float lambda2 = abs(rowF31 / denom);
+                    float lambda1 = abs(rowF23 * denom);
+                    float lambda2 = abs(rowF31 * denom);
                     float lambda3 = 1.0f - lambda1 - lambda2;
                     vec3 BC({lambda1, lambda2, lambda3});
 
@@ -350,9 +353,14 @@ namespace DoganGL {
                     context->fragments[y * width + x].z = z;
 
                     auto index = context->fragments[y * width + x].index;
+
+                    float* fragPtr = &context->fragmentAttributes[index];
+                    const float* aPtr = tri.A.attribs.data();
+                    const float* bPtr = tri.B.attribs.data();
+                    const float* cPtr = tri.C.attribs.data();
+
                     for (int i = 0; i < numAttribs; i++) {
-                        context->fragmentAttributes[index + i] = 
-                            (BC.x * tri.A.attribs[i]) + (BC.y * tri.B.attribs[i]) + (BC.z * tri.C.attribs[i]);
+                        fragPtr[i] = (BC.x * aPtr[i]) + (BC.y * bPtr[i]) + (BC.z * cPtr[i]);
                     }
 
                 }
@@ -436,4 +444,13 @@ namespace DoganGL {
         context->img.width /= scale;
         return true;
     }
+}
+
+template <typename T>
+inline T clamp(T val, T min, T max) {
+    if (val < min)
+        return min;
+    if (val > max)
+        return max;
+    return val;
 }
