@@ -4,11 +4,13 @@
 #include <chrono>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
-#include "DoganGL.hpp"
+#include "FalconGL.hpp"
+
+static const std::string project_root(PROJECT_ROOT); 
 
 int proj_index;
 
-vec4 vs(DoganGL::Vertex vert, const float * uniforms) {
+vec4 vs(FalconGL::Vertex vert, const float * uniforms) {
     glm::mat4 proj = glm::make_mat4(&uniforms[proj_index]);
     return proj * vec4(vert.attribs[0], vert.attribs[1], vert.attribs[2], 1);
 }
@@ -29,7 +31,7 @@ vec4 fs(const float * attribs) {
     return vec4(col, 1.0);
 }
 
-void displayTris(std::vector<DoganGL::Triangle> &tris) {
+void displayTris(std::vector<FalconGL::Triangle> &tris) {
     int i = 0;
     for (const auto &tri : tris) {
         std::cout << "Triangle " << i++ << ": {\n";
@@ -39,7 +41,7 @@ void displayTris(std::vector<DoganGL::Triangle> &tris) {
     }
 }
 
-std::string trisToString(std::vector<DoganGL::Triangle> &tris) {
+std::string trisToString(std::vector<FalconGL::Triangle> &tris) {
     std::stringstream str;
     int i = 0;
     for (const auto &tri : tris) {
@@ -81,24 +83,24 @@ auto test(std::string name, Func&& func, Args&&... args)
 }
 
 int main() {
-    // DoganGL::Vertex triangleArr[3] = {
+    // FalconGL::Vertex triangleArr[3] = {
     //     {{-0.5f, -0.5f, 0.0f, 0.565f, 0.11f, 0.89f}}, // Bottom-left
     //     {{ 0.5f, -0.5f, 0.0f, 0.89f, 0.345f, 0.071f}}, // Bottom-right
     //     {{ 0.0f,  0.5f, 0.0f, 0.392f, 0.929f, 0.141f}}  // Top-center
     // };
     // 1 Clip
-    // DoganGL::Vertex triangleArr[3] = {
+    // FalconGL::Vertex triangleArr[3] = {
     //     {{2.0f, 0.0f, 0.0f, 1.0f}}, // Outside (x > w)
     //     {{0.0f, 1.0f, 0.0f, 1.0f}}, // Inside
     //     {{0.0f, -1.0f, 0.0f, 1.0f}} // Inside
     // };
     // 2 Clip
-    // DoganGL::Vertex triangleArr[3] = {
+    // FalconGL::Vertex triangleArr[3] = {
     //     {{-0.4f, -0.4f, 0.0f, 1.0f}}, // Outside (x > w)
     //     {{-0.4f,  1.4f, 0.0f, 1.0f}}, // Inside
     //     {{ 1.4f, -0.4f, 0.0f, 1.0f}} // Inside
     // };
-    // DoganGL::Vertex triangleArr[6] = {
+    // FalconGL::Vertex triangleArr[6] = {
     //     {{-0.25f, -0.5f,  -15.5f, 0.565f, 0.11f,  0.89f }},
     //     {{ 0.75f, -0.5f,  -15.5f, 0.89f,  0.345f, 0.071f}},
     //     {{ 0.25f,  0.5f,  -15.5f, 0.392f, 0.929f, 0.141f}},
@@ -107,67 +109,67 @@ int main() {
     //     {{-0.25f, -0.5f,  -1.0f, 0.565f, 0.11f,  0.89f }}
     // };
 
-    DoganGL::Vertex A = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, -0.57735027f, -0.21132487f, 0.78867513f}};
-    DoganGL::Vertex B = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f,  0.57735027f, -0.21132487f, 0.78867513f}};
-    DoganGL::Vertex C = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f,  0.0f,         0.70710678f, 0.70710678f}};
-    DoganGL::Vertex D = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f,  0.0f,         0.07161243f, 0.99743253f}};
+    FalconGL::Vertex A = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, -0.57735027f, -0.21132487f, 0.78867513f}};
+    FalconGL::Vertex B = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f,  0.57735027f, -0.21132487f, 0.78867513f}};
+    FalconGL::Vertex C = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f,  0.0f,         0.70710678f, 0.70710678f}};
+    FalconGL::Vertex D = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f,  0.0f,         0.07161243f, 0.99743253f}};
 
-    DoganGL::Vertex A1 = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, -0.81649658f, 0.40824829f, 0.40824829f}};
-    DoganGL::Vertex D1 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, -0.81649658f, 0.40824829f, 0.40824829f}};
-    DoganGL::Vertex C1 = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f, -0.81649658f, 0.40824829f, 0.40824829f}};
+    FalconGL::Vertex A1 = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, -0.81649658f, 0.40824829f, 0.40824829f}};
+    FalconGL::Vertex D1 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, -0.81649658f, 0.40824829f, 0.40824829f}};
+    FalconGL::Vertex C1 = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f, -0.81649658f, 0.40824829f, 0.40824829f}};
  
-    DoganGL::Vertex A2 = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, 0.0f, -0.70710678f, 0.70710678f}};
-    DoganGL::Vertex B2 = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f, 0.0f, -0.70710678f, 0.70710678f}};
-    DoganGL::Vertex D2 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, 0.0f, -0.70710678f, 0.70710678f}};
+    FalconGL::Vertex A2 = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, 0.0f, -0.70710678f, 0.70710678f}};
+    FalconGL::Vertex B2 = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f, 0.0f, -0.70710678f, 0.70710678f}};
+    FalconGL::Vertex D2 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, 0.0f, -0.70710678f, 0.70710678f}};
 
-    DoganGL::Vertex B3 = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f, 0.81649658f, 0.40824829f, 0.40824829f}};
-    DoganGL::Vertex C3 = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f, 0.81649658f, 0.40824829f, 0.40824829f}};
-    DoganGL::Vertex D3 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, 0.81649658f, 0.40824829f, 0.40824829f}};
+    FalconGL::Vertex B3 = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f, 0.81649658f, 0.40824829f, 0.40824829f}};
+    FalconGL::Vertex C3 = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f, 0.81649658f, 0.40824829f, 0.40824829f}};
+    FalconGL::Vertex D3 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, 0.81649658f, 0.40824829f, 0.40824829f}};
 
-    DoganGL::Vertex triangleArr[9] = {
+    FalconGL::Vertex triangleArr[9] = {
         A1,D1,C1,
         A2,B2,D2,
         B3,C3,D3
     };
-    std::vector<DoganGL::Vertex> triangle(&triangleArr[0], &triangleArr[9]);
+    std::vector<FalconGL::Vertex> triangle(&triangleArr[0], &triangleArr[9]);
     int viewportWidth  = 800;   // Screen width
     int viewportHeight = 600;   // Screen height
     float nearVal = 0.1f;          // Near depth value
     float farVal = 100.0f;            // Far depth value
 
-    DoganGL::Context * context = new DoganGL::Context();
-    DoganGL::setupViewport(context, viewportWidth, viewportHeight, nearVal, farVal, 0, 0);
+    FalconGL::Context * context = new FalconGL::Context();
+    FalconGL::setupViewport(context, viewportWidth, viewportHeight, nearVal, farVal, 0, 0);
 
-    DoganGL::VAO vao;
+    FalconGL::VAO vao;
     pos_index = vao.addAttrib(3);
     col_index = vao.addAttrib(3);
     norm_index = vao.addAttrib(3);
 
     auto start = std::chrono::high_resolution_clock::now();
     
-    test("bindVAO", DoganGL::bindVAO, context, vao);
+    test("bindVAO", FalconGL::bindVAO, context, vao);
 
     glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)viewportWidth/(float)viewportHeight, 0.1f, 100.0f);
-    proj_index = DoganGL::addUniform(context, 16, glm::value_ptr(proj));
+    proj_index = FalconGL::addUniform(context, 16, glm::value_ptr(proj));
 
-    test("loadVertexShader", DoganGL::loadVertexShader, context, vs);
-    test("loadVertices", DoganGL::loadVertices, context, triangle);
+    test("loadVertexShader", FalconGL::loadVertexShader, context, vs);
+    test("loadVertices", FalconGL::loadVertices, context, triangle);
 
-    test("applyVertexShader", DoganGL::applyVertexShader, context);
-    test("VertexPostProcessing", DoganGL::VertexPostProcessing, context);
+    test("applyVertexShader", FalconGL::applyVertexShader, context);
+    test("VertexPostProcessing", FalconGL::VertexPostProcessing, context);
 
     // test("displayTris", displayTris, context->postProcessedTris);
 
-    test("loadFragmentShader", DoganGL::loadFragmentShader, context, fs);
+    test("loadFragmentShader", FalconGL::loadFragmentShader, context, fs);
 
-    test("setupFrameBuffer", DoganGL::setupFrameBuffer, context);
-    test("rasterize", DoganGL::rasterize, context);
-    test("clearFrameBuffer", DoganGL::clearFrameBuffer, context, vec3(0.98,0.73,0.01));
-    test("applyFragmentShader", DoganGL::applyFragmentShader, context);
+    test("setupFrameBuffer", FalconGL::setupFrameBuffer, context);
+    test("rasterize", FalconGL::rasterize, context);
+    test("clearFrameBuffer", FalconGL::clearFrameBuffer, context, vec3(0.98,0.73,0.01));
+    test("applyFragmentShader", FalconGL::applyFragmentShader, context);
 
-    //test("antialiasing downscaling", DoganGL::AA, context, 2);
+    //test("antialiasing downscaling", FalconGL::AA, context, 2);
 
-    test("imageWrite (external)", &DoganGL::Image::write, context->img, "C:/Users/dogan/Documents/DoganGL/img.bmp");
+    test("imageWrite (external)", &FalconGL::Image::write, context->img, project_root + "/img.bmp");
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed = end - start;

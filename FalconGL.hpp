@@ -19,7 +19,7 @@ using glm::vec2;
 using glm::vec3;
 using glm::vec4;
 
-namespace DoganGL {
+namespace FalconGL {
     struct Vertex {
         std::vector<float> attribs;
     };
