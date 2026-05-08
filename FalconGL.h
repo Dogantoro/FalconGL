@@ -1,7 +1,10 @@
+#pragma once
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
+#include <memory.h>
 
 // errors are negative
 typedef enum status_t {
@@ -150,4 +153,3 @@ status_t fgl_init(fgl_t * fgl, size_t num_verts, size_t screen_width, size_t scr
     free(fgl->buffer_2.color);
     return FGL_STATUS_ERROR_ALLOC;
 }
-
