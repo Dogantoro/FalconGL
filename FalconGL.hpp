@@ -64,7 +64,47 @@ namespace FalconGL {
             return tmp;
         }
     };
-    using VertexShader = std::function<vec4(const Vertex&, const float * uniforms)>;
+    struct Attribs {
+        const float * attribs;
+        const int size;
+        Attribs(const float * attribs, int size) : size(size), attribs(attribs) {}
+        inline float operator[] (const int i) const {
+            if (i < 0 || i >= size) [[unlikely]]
+                throw std::invalid_argument((std::string("i=") + std::to_string(i) + " must be in range [0, " + std::to_string(size) + ")!"));
+            return attribs[i];
+        }
+        inline glm::vec2 getvec2(const int i) const {
+            if (i < 0 || i + 1 >= size) [[unlikely]]
+                throw std::invalid_argument((std::string("i=") + std::to_string(i) + " and i+1 must be in range [0, " + std::to_string(size) + ")!"));
+            return glm::vec2(attribs[i],attribs[i+1]);
+        }
+        inline glm::vec3 getvec3(const int i) const {
+            if (i < 0 || i + 2 >= size) [[unlikely]]
+                throw std::invalid_argument((std::string("i=") + std::to_string(i) + " and i+2 must be in range [0, " + std::to_string(size) + ")!"));
+            return glm::vec3(attribs[i],attribs[i+1],attribs[i+2]);
+        }
+        inline glm::vec4 getvec4(const int i) const {
+            if (i < 0 || i + 3 >= size) [[unlikely]]
+                throw std::invalid_argument((std::string("i=") + std::to_string(i) + " and i+3 must be in range [0, " + std::to_string(size) + ")!"));
+            return glm::vec4(attribs[i],attribs[i+1],attribs[i+2],attribs[i+3]);
+        }
+        inline glm::mat2x2 getmat2x2(const int i) const {
+            if (i < 0 || i + 3 >= size) [[unlikely]]
+                throw std::invalid_argument((std::string("i=") + std::to_string(i) + " and i+3 must be in range [0, " + std::to_string(size) + ")!"));
+            return glm::mat2x2(attribs[i],attribs[i+1],attribs[i+2],attribs[i+3]);
+        }
+        inline glm::mat3x3 getmat3x3(const int i) const {
+            if (i < 0 || i + 8 >= size) [[unlikely]]
+                throw std::invalid_argument((std::string("i=") + std::to_string(i) + " and i+8 must be in range [0, " + std::to_string(size) + ")!"));
+            return glm::make_mat3x3(attribs + i);
+        }
+        inline glm::mat4x4 getmat4x4(const int i) const {
+            if (i < 0 || i + 15 >= size) [[unlikely]]
+                throw std::invalid_argument((std::string("i=") + std::to_string(i) + " and i+15 must be in range [0, " + std::to_string(size) + ")!"));
+            return glm::make_mat4x4(attribs + i);
+        }
+    };
+    using VertexShader = std::function<vec4(const Attribs& vertex, const Attribs &uniforms)>;
     using FragmentShader = std::function<vec4(const float * attribs)>;
     struct Context {
         std::vector<Vertex> vertices;
@@ -124,10 +164,12 @@ namespace FalconGL {
             return false;
         context->postVSVertices.clear();
         context->postVSVertices.reserve(context->vertices.size());
-        float * uniforms = context->uniforms.data();
+        // float * uniforms = context->uniforms.data();
+        Attribs uniforms(context->uniforms.data(), context->uniforms.size());
+        int num_attribs = context->vertices.size()?context->vertices[0].attribs.size():0;
         for (Vertex vertex : context->vertices) {
             ProcessedVertex tmp;
-            tmp.pos = context->vertexShader(vertex,uniforms);
+            tmp.pos = context->vertexShader(Attribs(vertex.attribs.data(), num_attribs),uniforms);
             tmp.attribs = vertex.attribs;
             context->postVSVertices.push_back(tmp);
         }

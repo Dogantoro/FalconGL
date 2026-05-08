@@ -10,9 +10,11 @@ static const std::string project_root(PROJECT_ROOT);
 
 int proj_index;
 
-vec4 vs(FalconGL::Vertex vert, const float * uniforms) {
-    glm::mat4 proj = glm::make_mat4(&uniforms[proj_index]);
-    return proj * vec4(vert.attribs[0], vert.attribs[1], vert.attribs[2], 1);
+vec4 vs(const FalconGL::Attribs &vert, const FalconGL::Attribs &uniforms) {
+    glm::mat4 proj = uniforms.getmat4x4(proj_index);
+    glm::vec4 pos  = glm::vec4(vert.getvec3(0),1);
+    // std::cout << "{" << pos.x << ", \t" << pos.y << ", \t" << pos.z << "}" << std::endl;
+    return proj * pos;
 }
 
 int pos_index;
@@ -109,22 +111,26 @@ int main() {
     //     {{-0.25f, -0.5f,  -1.0f, 0.565f, 0.11f,  0.89f }}
     // };
 
+    // Smooth
     FalconGL::Vertex A = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, -0.57735027f, -0.21132487f, 0.78867513f}};
     FalconGL::Vertex B = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f,  0.57735027f, -0.21132487f, 0.78867513f}};
     FalconGL::Vertex C = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f,  0.0f,         0.70710678f, 0.70710678f}};
     FalconGL::Vertex D = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f,  0.0f,         0.07161243f, 0.99743253f}};
 
-    FalconGL::Vertex A1 = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, -0.81649658f, 0.40824829f, 0.40824829f}};
-    FalconGL::Vertex D1 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, -0.81649658f, 0.40824829f, 0.40824829f}};
-    FalconGL::Vertex C1 = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f, -0.81649658f, 0.40824829f, 0.40824829f}};
- 
-    FalconGL::Vertex A2 = {{-0.5f, -0.5f, -1.5f, 0.8f, 0.0f, 0.0f, 0.0f, -0.70710678f, 0.70710678f}};
-    FalconGL::Vertex B2 = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f, 0.0f, -0.70710678f, 0.70710678f}};
-    FalconGL::Vertex D2 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, 0.0f, -0.70710678f, 0.70710678f}};
+    static const float pos_scalar = 0.2f;
 
-    FalconGL::Vertex B3 = {{ 0.5f, -0.5f, -1.5f, 0.0f, 0.8f, 0.0f, 0.81649658f, 0.40824829f, 0.40824829f}};
-    FalconGL::Vertex C3 = {{ 0.0f,  0.5f, -1.5f, 0.0f, 0.0f, 0.8f, 0.81649658f, 0.40824829f, 0.40824829f}};
-    FalconGL::Vertex D3 = {{ 0.0f,  0.0f, -1.0f, 0.8f, 0.8f, 0.8f, 0.81649658f, 0.40824829f, 0.40824829f}};
+    // Flat -0.5f * pos_scalar instead of PI!
+    FalconGL::Vertex A1 = {{ 3.14159265432133f, -0.5f * pos_scalar, -1.5f * pos_scalar, 0.8f, 0.0f, 0.0f, -0.81649658f, 0.40824829f, 0.40824829f}};
+    FalconGL::Vertex D1 = {{ 0.0f * pos_scalar,  0.0f * pos_scalar, -1.0f * pos_scalar, 0.8f, 0.8f, 0.8f, -0.81649658f, 0.40824829f, 0.40824829f}};
+    FalconGL::Vertex C1 = {{ 0.0f * pos_scalar,  0.5f * pos_scalar, -1.5f * pos_scalar, 0.0f, 0.0f, 0.8f, -0.81649658f, 0.40824829f, 0.40824829f}};
+ 
+    FalconGL::Vertex A2 = {{-0.5f * pos_scalar, -0.5f * pos_scalar, -1.5f * pos_scalar, 0.8f, 0.0f, 0.0f, 0.0f, -0.70710678f, 0.70710678f}};
+    FalconGL::Vertex B2 = {{ 0.5f * pos_scalar, -0.5f * pos_scalar, -1.5f * pos_scalar, 0.0f, 0.8f, 0.0f, 0.0f, -0.70710678f, 0.70710678f}};
+    FalconGL::Vertex D2 = {{ 0.0f * pos_scalar,  0.0f * pos_scalar, -1.0f * pos_scalar, 0.8f, 0.8f, 0.8f, 0.0f, -0.70710678f, 0.70710678f}};
+
+    FalconGL::Vertex B3 = {{ 0.5f * pos_scalar, -0.5f * pos_scalar, -1.5f * pos_scalar, 0.0f, 0.8f, 0.0f, 0.81649658f, 0.40824829f, 0.40824829f}};
+    FalconGL::Vertex C3 = {{ 0.0f * pos_scalar,  0.5f * pos_scalar, -1.5f * pos_scalar, 0.0f, 0.0f, 0.8f, 0.81649658f, 0.40824829f, 0.40824829f}};
+    FalconGL::Vertex D3 = {{ 0.0f * pos_scalar,  0.0f * pos_scalar, -1.0f * pos_scalar, 0.8f, 0.8f, 0.8f, 0.81649658f, 0.40824829f, 0.40824829f}};
 
     FalconGL::Vertex triangleArr[9] = {
         A1,D1,C1,
