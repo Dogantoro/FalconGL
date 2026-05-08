@@ -1,0 +1,22 @@
+
+* bracket implies assigned automatically
+* each attrib group is a flat array 
+Vertex Specification (SoA of floats):
+    pos:    XYZ[W]
+    norm:   XYZ[W]
+    uv:     UV
+    col:    RGBA
+
+    user_defined: 0..7 (8 user defined float attrib slots)
+
+Stages:
+    1. Apply Vertex Shader (Buffer 0->1)
+    2. Apply Culling and Clipping (Same buffer, potential expansion)
+    3. Apply Perspective Divide and Viewport Transform (Same buffer)
+    4. Apply Rasterization (Buffer 1->2)
+
+Buffers:
+    Buffer 0: set size (number of vertices)
+    Buffer 1: dynamic size (init: number of vertices)
+    Buffer 2: set size (number of pixels)
+
